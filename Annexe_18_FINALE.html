@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collecte Présence – Prototype ESSMS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            color: white;
+            padding: 16px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        main {
+            padding: 16px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        h2 {
+            font-size: 22px;
+            color: #1e40af;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        select, input[type="date"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #1e40af;
+            border-radius: 6px;
+            font-size: 16px;
+            font-family: inherit;
+            background: white;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 12px;
+        }
+
+        .btn-primary {
+            background: #16a34a;
+            color: white;
+        }
+
+        .btn-primary:active {
+            background: #15803d;
+        }
+
+        .btn-secondary {
+            background: #1e40af;
+            color: white;
+            font-size: 13px;
+        }
+
+        .btn-secondary:active {
+            background: #1e3a8a;
+        }
+
+        .btn-validate {
+            background: #ea580c;
+            color: white;
+        }
+
+        .btn-validate:active {
+            background: #c2410c;
+        }
+
+        .btn-validate:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .nav-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .nav-row button {
+            flex: 1;
+            margin-top: 0;
+        }
+
+        .saisie-header {
+            background: #f0f9ff;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .saisie-header strong {
+            display: block;
+            font-size: 15px;
+            color: #1e40af;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #16a34a;
+            transition: width 0.3s;
+        }
+
+        .usager-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .usager-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #1e3a8a;
+        }
+
+        .status-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .status-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .status-btn:active {
+            border-color: #1e40af;
+            background: #1e40af;
+            color: white;
+        }
+
+        .status-btn.selected {
+            border-color: #1e40af;
+            background: #1e40af;
+            color: white;
+        }
+
+        .comment-field {
+            display: none;
+        }
+
+        .comment-field textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            min-height: 50px;
+            font-family: inherit;
+        }
+
+        .validation-section {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        .validation-section h3 {
+            margin-bottom: 12px;
+            color: #92400e;
+            font-size: 14px;
+        }
+
+        .signature-group label {
+            font-size: 13px;
+        }
+
+        .signature-group input {
+            padding: 10px;
+            border: 1px solid #fcd34d;
+        }
+
+        .alert {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+            font-size: 13px;
+        }
+
+        .historique-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .historique-item strong {
+            display: block;
+            color: #1e3a8a;
+            margin-bottom: 2px;
+            font-size: 14px;
+        }
+
+        .historique-item small {
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin: 12px 0;
+        }
+
+        table th {
+            background: #f0f9ff;
+            padding: 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #1e40af;
+            border-bottom: 2px solid #1e40af;
+        }
+
+        table td {
+            padding: 8px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Collecte Présence</h1>
+            <p>Prototype – données de démonstration</p>
+        </header>
+
+        <main>
+            <!-- ACCUEIL -->
+            <div class="screen active" id="accueil">
+                <h2>Nouvelle saisie</h2>
+
+                <div class="form-group">
+                    <label for="site">Site ou service</label>
+                    <select id="site">
+                        <option value="">-- Choisir --</option>
+                        <option value="site1">Site 1</option>
+                        <option value="site2">Site 2</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="date">Date de saisie</label>
+                    <input type="date" id="date">
+                </div>
+
+                <button class="btn-primary" id="btn-start">Commencer la saisie</button>
+            </div>
+
+            <!-- SAISIE -->
+            <div class="screen" id="saisie">
+                <div class="nav-row">
+                    <button class="btn-secondary" id="btn-accueil">Accueil</button>
+                    <button class="btn-secondary" id="btn-histo">Historique</button>
+                    <button class="btn-secondary" id="btn-monthly">Mensuel</button>
+                </div>
+
+                <div class="saisie-header">
+                    <strong id="site-name"></strong>
+                    <span id="date-display"></span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress" style="width: 0%"></div>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 12px;"><span id="progress-text">0 / 0</span></div>
+                </div>
+
+                <div id="alerts-box"></div>
+                <div id="usagers-list"></div>
+
+                <div class="validation-section">
+                    <h3>Validation de la journée</h3>
+                    <div class="form-group">
+                        <label for="name-input">Nom ou initiales</label>
+                        <input type="text" id="name-input" placeholder="Ex: JD">
+                    </div>
+                    <button class="btn-validate" id="btn-val">Valider</button>
+                </div>
+            </div>
+
+            <!-- HISTORIQUE -->
+            <div class="screen" id="historique">
+                <div class="nav-row">
+                    <button class="btn-secondary" id="btn-back-histo">Accueil</button>
+                </div>
+                <h2>Historique</h2>
+                <div id="histo-list"></div>
+            </div>
+
+            <!-- MENSUEL -->
+            <div class="screen" id="monthly">
+                <div class="nav-row">
+                    <button class="btn-secondary" id="btn-back-monthly">Accueil</button>
+                </div>
+                <h2>Vue mensuelle</h2>
+                <div class="form-group">
+                    <label for="month-input">Mois / Site</label>
+                    <select id="month-input">
+                        <option value="">-- Choisir --</option>
+                    </select>
+                </div>
+                <div id="monthly-data"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // DONNÉES
+        var APP = {
+            site1: ['Alice', 'Bob', 'Charlie', 'David', 'Emma', 'Frank', 'Grace', 'Henry'],
+            site2: ['Iris', 'Jack', 'Kate', 'Leo', 'Mia', 'Noah', 'Olive', 'Peter']
+        };
+
+        var currentSite = null;
+        var currentDate = null;
+        var currentData = null;
+
+        // UTILITAIRES
+        function showScreen(id) {
+            var screens = document.querySelectorAll('.screen');
+            for (var i = 0; i < screens.length; i++) {
+                screens[i].classList.remove('active');
+            }
+            document.getElementById(id).classList.add('active');
+        }
+
+        function getKey(site, date) {
+            return 'saisie_' + site + '_' + date;
+        }
+
+        function loadSaisie(site, date) {
+            var key = getKey(site, date);
+            var data = localStorage.getItem(key);
+            if (data) {
+                return JSON.parse(data);
+            }
+            var newData = { usagers: {}, validated: false, by: '', at: '' };
+            var usagers = site === 'site1' ? APP.site1 : APP.site2;
+            for (var i = 0; i < usagers.length; i++) {
+                newData.usagers[usagers[i]] = { status: '', comment: '' };
+            }
+            return newData;
+        }
+
+        function saveSaisie(site, date, data) {
+            var key = getKey(site, date);
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+
+        // ÉCRAN ACCUEIL
+        document.getElementById('btn-start').addEventListener('click', function() {
+            var site = document.getElementById('site').value;
+            var date = document.getElementById('date').value;
+
+            if (!site || !date) {
+                alert('Remplir les deux champs');
+                return;
+            }
+
+            currentSite = site;
+            currentDate = date;
+            currentData = loadSaisie(site, date);
+
+            var siteName = site === 'site1' ? 'Site 1' : 'Site 2';
+            document.getElementById('site-name').textContent = siteName;
+            document.getElementById('date-display').textContent = new Date(date + 'T00:00:00').toLocaleDateString('fr-FR');
+
+            renderSaisie();
+            showScreen('saisie');
+        });
+
+        // ÉCRAN SAISIE
+        function renderSaisie() {
+            var container = document.getElementById('usagers-list');
+            container.innerHTML = '';
+
+            var usagers = currentSite === 'site1' ? APP.site1 : APP.site2;
+
+            for (var i = 0; i < usagers.length; i++) {
+                var u = usagers[i];
+                var status = currentData.usagers[u];
+
+                var card = document.createElement('div');
+                card.className = 'usager-card';
+
+                var html = '<div class="usager-name">' + u + '</div>';
+                html += '<div class="status-buttons" data-user="' + u + '"></div>';
+                html += '<div class="comment-field"><textarea data-user="' + u + '" placeholder="Préciser..."></textarea></div>';
+
+                card.innerHTML = html;
+                container.appendChild(card);
+
+                var buttonDiv = card.querySelector('.status-buttons');
+                var statuses = ['P', 'A', 'AJ'];
+                for (var j = 0; j < statuses.length; j++) {
+                    var st = statuses[j];
+                    var btn = document.createElement('button');
+                    btn.className = 'status-btn';
+                    btn.textContent = st;
+                    btn.dataset.user = u;
+                    btn.dataset.status = st;
+                    if (status.status === st) {
+                        btn.classList.add('selected');
+                    }
+                    btn.addEventListener('click', handleStatusClick);
+                    buttonDiv.appendChild(btn);
+                }
+
+                var textarea = card.querySelector('textarea');
+                textarea.value = status.comment;
+                textarea.addEventListener('change', function() {
+                    currentData.usagers[this.dataset.user].comment = this.value;
+                });
+
+                var commentDiv = card.querySelector('.comment-field');
+                if (status.status === 'AJ' || status.comment) {
+                    commentDiv.style.display = 'block';
+                } else {
+                    commentDiv.style.display = 'none';
+                }
+            }
+
+            updateProgress();
+        }
+
+        function handleStatusClick(e) {
+            var btn = e.target;
+            var user = btn.dataset.user;
+            var status = btn.dataset.status;
+
+            currentData.usagers[user].status = status;
+            currentData.usagers[user].comment = '';
+
+            renderSaisie();
+            updateProgress();
+        }
+
+        function updateProgress() {
+            var usagers = currentSite === 'site1' ? APP.site1 : APP.site2;
+            var count = 0;
+
+            for (var i = 0; i < usagers.length; i++) {
+                var u = usagers[i];
+                var s = currentData.usagers[u];
+                if (s.status === 'AJ') {
+                    if (s.comment && s.comment.trim()) count++;
+                } else if (s.status) {
+                    count++;
+                }
+            }
+
+            var pct = Math.round((count / usagers.length) * 100);
+            document.getElementById('progress').style.width = pct + '%';
+            document.getElementById('progress-text').textContent = count + ' / ' + usagers.length;
+
+            var btn = document.getElementById('btn-val');
+            btn.disabled = (count !== usagers.length) || currentData.validated;
+        }
+
+        document.getElementById('btn-val').addEventListener('click', function() {
+            var name = document.getElementById('name-input').value.trim();
+            if (!name) {
+                alert('Entrer nom/initiales');
+                return;
+            }
+
+            var now = new Date();
+            var time = (now.getHours() < 10 ? '0' : '') + now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+
+            currentData.validated = true;
+            currentData.by = name;
+            currentData.at = time;
+
+            saveSaisie(currentSite, currentDate, currentData);
+            document.getElementById('name-input').value = '';
+
+            var alertBox = document.getElementById('alerts-box');
+            var msg = document.createElement('div');
+            msg.className = 'alert';
+            msg.textContent = 'Validée par ' + name + ' à ' + time;
+            alertBox.appendChild(msg);
+
+            updateProgress();
+        });
+
+        document.getElementById('btn-accueil').addEventListener('click', function() {
+            showScreen('accueil');
+        });
+
+        // ÉCRAN HISTORIQUE
+        document.getElementById('btn-histo').addEventListener('click', function() {
+            var container = document.getElementById('histo-list');
+            container.innerHTML = '';
+
+            var items = [];
+            for (var i = 0; i < localStorage.length; i++) {
+                var key = localStorage.key(i);
+                if (key.indexOf('saisie_') === 0) {
+                    var parts = key.split('_');
+                    var site = parts[1];
+                    var date = parts[2];
+                    var data = JSON.parse(localStorage.getItem(key));
+                    var siteName = site === 'site1' ? 'Site 1' : 'Site 2';
+                    items.push({ site: siteName, siteId: site, date: date, data: data });
+                }
+            }
+
+            items.sort(function(a, b) {
+                return new Date(b.date) - new Date(a.date);
+            });
+
+            if (items.length === 0) {
+                container.innerHTML = '<p style="color: #999;">Aucune saisie</p>';
+            } else {
+                for (var i = 0; i < items.length; i++) {
+                    var item = items[i];
+                    var div = document.createElement('div');
+                    div.className = 'historique-item';
+                    var dateStr = new Date(item.date + 'T00:00:00').toLocaleDateString('fr-FR');
+                    div.innerHTML = '<strong>' + item.site + '</strong><small>' + dateStr + '</small>';
+                    if (item.data.validated) {
+                        div.innerHTML += '<small style="color: #16a34a; display: block; margin-top: 4px;">✓ ' + item.data.by + ' à ' + item.data.at + '</small>';
+                    }
+                    (function(site, date, data) {
+                        div.addEventListener('click', function() {
+                            currentSite = site;
+                            currentDate = date;
+                            currentData = data;
+                            var siteName = site === 'site1' ? 'Site 1' : 'Site 2';
+                            document.getElementById('site-name').textContent = siteName;
+                            document.getElementById('date-display').textContent = new Date(date + 'T00:00:00').toLocaleDateString('fr-FR');
+                            renderSaisie();
+                            showScreen('saisie');
+                        });
+                    })(item.siteId, item.date, item.data);
+                    container.appendChild(div);
+                }
+            }
+
+            showScreen('historique');
+        });
+
+        document.getElementById('btn-back-histo').addEventListener('click', function() {
+            showScreen('accueil');
+        });
+
+        // ÉCRAN MENSUEL
+        document.getElementById('btn-monthly').addEventListener('click', function() {
+            var select = document.getElementById('month-input');
+            select.innerHTML = '<option value="">-- Choisir --</option>';
+
+            var months = {};
+            for (var i = 0; i < localStorage.length; i++) {
+                var key = localStorage.key(i);
+                if (key.indexOf('saisie_') === 0) {
+                    var parts = key.split('_');
+                    var site = parts[1];
+                    var date = parts[2];
+                    var ym = date.substring(0, 7);
+                    if (!months[ym]) months[ym] = {};
+                    if (!months[ym][site]) months[ym][site] = [];
+                    months[ym][site].push(date);
+                }
+            }
+
+            var ymList = Object.keys(months).sort().reverse();
+            for (var i = 0; i < ymList.length; i++) {
+                var ym = ymList[i];
+                var sites = Object.keys(months[ym]);
+                for (var j = 0; j < sites.length; j++) {
+                    var site = sites[j];
+                    var opt = document.createElement('option');
+                    opt.value = site + '|' + ym;
+                    var siteName = site === 'site1' ? 'Site 1' : 'Site 2';
+                    var y = ym.substring(0, 4);
+                    var m = ym.substring(5, 7);
+                    var monthName = new Date(y, m - 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+                    opt.textContent = siteName + ' – ' + monthName;
+                    select.appendChild(opt);
+                }
+            }
+
+            showScreen('monthly');
+        });
+
+        document.getElementById('month-input').addEventListener('change', function() {
+            if (!this.value) {
+                document.getElementById('monthly-data').innerHTML = '';
+                return;
+            }
+
+            var parts = this.value.split('|');
+            var site = parts[0];
+            var ym = parts[1];
+
+            var usagers = site === 'site1' ? APP.site1 : APP.site2;
+            var summary = {};
+            for (var i = 0; i < usagers.length; i++) {
+                summary[usagers[i]] = { P: 0, A: 0, AJ: 0 };
+            }
+
+            for (var i = 0; i < localStorage.length; i++) {
+                var key = localStorage.key(i);
+                if (key.indexOf('saisie_' + site + '_') === 0 && key.substring(9, 16) === ym) {
+                    var data = JSON.parse(localStorage.getItem(key));
+                    for (var j = 0; j < usagers.length; j++) {
+                        var u = usagers[j];
+                        var status = data.usagers[u].status;
+                        if (status === 'P') summary[u].P++;
+                        if (status === 'A') summary[u].A++;
+                        if (status === 'AJ') summary[u].AJ++;
+                    }
+                }
+            }
+
+            var html = '<table><tr><th>Usager</th><th>P</th><th>A</th><th>AJ</th></tr>';
+            var tP = 0, tA = 0, tAJ = 0;
+            for (var i = 0; i < usagers.length; i++) {
+                var u = usagers[i];
+                var s = summary[u];
+                html += '<tr><td>' + u + '</td><td>' + s.P + '</td><td>' + s.A + '</td><td>' + s.AJ + '</td></tr>';
+                tP += s.P; tA += s.A; tAJ += s.AJ;
+            }
+            html += '<tr style="background: #f0f9ff; font-weight: 600;"><td>TOTAL</td><td>' + tP + '</td><td>' + tA + '</td><td>' + tAJ + '</td></tr></table>';
+
+            document.getElementById('monthly-data').innerHTML = html;
+        });
+
+        document.getElementById('btn-back-monthly').addEventListener('click', function() {
+            showScreen('accueil');
+        });
+
+        // INIT
+        document.getElementById('date').value = new Date().toISOString().split('T')[0];
+    </script>
+</body>
+</html>
