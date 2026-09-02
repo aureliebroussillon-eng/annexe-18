@@ -348,6 +348,9 @@
         document.getElementById('btn-back-histo').addEventListener('click', function() { showScreen('accueil'); });
 
         document.getElementById('btn-monthly').addEventListener('click', function() {
+            window.monthlyData = null;
+            document.getElementById('monthly-data').innerHTML = '';
+            document.getElementById('monthly-exports').style.display = 'none';
             var select = document.getElementById('month-input');
             select.innerHTML = '<option value="">-- Choisir --</option>';
             var months = {};
