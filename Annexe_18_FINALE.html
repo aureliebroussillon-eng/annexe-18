@@ -3,32 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Collecte Présence – Prototype ESSMS</title>
+    <title>Collecte Présence</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: system-ui, -apple-system, sans-serif; background: #f5f5f5; color: #333; }
         .container { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; }
         header { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 16px; text-align: center; }
-        header h1 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
-        header p { font-size: 12px; opacity: 0.9; }
+        header h1 { font-size: 18px; font-weight: 600; }
         main { padding: 16px; }
         .screen { display: none; }
         .screen.active { display: block; }
         h2 { font-size: 22px; color: #1e40af; margin-bottom: 20px; text-align: center; }
         .form-group { margin-bottom: 16px; }
         label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
-        select, input[type="date"], input[type="text"], textarea { width: 100%; padding: 12px; border: 2px solid #1e40af; border-radius: 6px; font-size: 16px; font-family: inherit; background: white; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 12px; }
+        select, input[type="date"], input[type="text"] { width: 100%; padding: 12px; border: 2px solid #1e40af; border-radius: 6px; font-size: 16px; font-family: inherit; background: white; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 12px; }
         .btn-primary { background: #16a34a; color: white; }
-        .btn-primary:active { background: #15803d; }
         .btn-secondary { background: #1e40af; color: white; font-size: 13px; }
-        .btn-secondary:active { background: #1e3a8a; }
         .btn-validate { background: #ea580c; color: white; }
-        .btn-validate:active { background: #c2410c; }
         .btn-validate:disabled { background: #ccc; cursor: not-allowed; }
         .btn-export { background: #7c3aed; color: white; font-size: 13px; }
-        .btn-export:active { background: #6d28d9; }
         .nav-row { display: flex; gap: 8px; padding: 8px 16px; background: white; border-bottom: 1px solid #e5e7eb; }
         .nav-row button { flex: 1; margin-top: 0; font-size: 12px; }
         .saisie-header { background: #f0f9ff; padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; }
@@ -40,50 +35,28 @@
         .usager-name { font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #1e3a8a; }
         .status-buttons { display: flex; gap: 8px; margin-bottom: 8px; }
         .status-btn { flex: 1; padding: 10px; border: 2px solid #ddd; background: white; border-radius: 4px; font-weight: 700; font-size: 14px; cursor: pointer; margin: 0; }
-        .status-btn:active { border-color: #1e40af; background: #1e40af; color: white; }
         .status-btn.selected { border-color: #1e40af; background: #1e40af; color: white; }
         .comment-field { display: none; margin-top: 8px; }
-        .comment-field textarea { padding: 8px; border: 1px solid #ddd; min-height: 50px; font-size: 13px; }
+        .comment-field textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; min-height: 50px; font-family: inherit; }
         .comment-label { font-size: 12px; color: #666; margin-top: 4px; }
         .comment-required { color: #dc2626; font-weight: 600; }
-        .validation-section { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; padding: 16px; margin-top: 20px; }
+        .validation-section { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; padding: 16px; margin-top: 20px; margin-bottom: 100px; }
         .validation-section h3 { margin-bottom: 12px; color: #92400e; font-size: 14px; }
-        .signature-group input { padding: 10px; border: 1px solid #fcd34d; }
         .validation-fixed { position: fixed; bottom: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto; background: white; border-top: 1px solid #e5e7eb; padding: 12px 16px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); z-index: 99; }
         .validation-fixed button { margin-top: 0; }
         .alert { background: #dcfce7; color: #166534; padding: 12px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; border-left: 4px solid #16a34a; }
         .historique-item { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
-        .historique-item:active { background: #f3f4f6; }
         .historique-item strong { display: block; color: #1e3a8a; margin-bottom: 4px; }
         .historique-item small { display: block; color: #666; font-size: 12px; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 16px; }
         table th, table td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
-        #usagers-list { margin-bottom: 100px; }
+        table th { background: #f0f9ff; color: #1e40af; font-weight: 600; }
         .summary-stats { background: #f0f9ff; padding: 12px; border-radius: 6px; margin-top: 16px; margin-bottom: 16px; font-size: 13px; }
         .summary-stats p { margin-bottom: 8px; }
         .summary-stats strong { color: #1e40af; }
         .aj-section { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 12px; margin-top: 16px; font-size: 13px; }
-        .aj-section h4 { color: #92400e; margin-bottom: 8px; font-size: 14px; }
+        .aj-section h4 { color: #92400e; margin-bottom: 8px; }
         .aj-item { background: white; padding: 8px; border-radius: 4px; margin-bottom: 8px; border-left: 3px solid #f59e0b; }
-        .bordereau-container { display: none; background: white; padding: 20px; border-radius: 8px; margin-top: 16px; }
-        .bordereau-container.visible { display: block; }
-        .bordereau-header { text-align: center; border-bottom: 2px solid #1e40af; padding-bottom: 16px; margin-bottom: 16px; }
-        .bordereau-header h2 { margin-bottom: 4px; font-size: 18px; }
-        .bordereau-header p { font-size: 12px; color: #666; }
-        .bordereau-section { margin-bottom: 16px; }
-        .bordereau-section h3 { font-size: 14px; color: #1e40af; margin-bottom: 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
-        .bordereau-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
-        .bordereau-row strong { color: #1e3a8a; }
-        @media print {
-            body { background: white; }
-            .container { max-width: 100%; background: white; margin: 0; }
-            header { display: none; }
-            main { padding-top: 0; }
-            .nav-row { display: none; }
-            .validation-fixed { display: none; }
-            .form-group, button { display: none; }
-            #bordereau-print { display: block !important; padding: 0; margin: 0; }
-        }
     </style>
 </head>
 <body>
@@ -92,14 +65,13 @@
             <h1>Collecte et transmission des journées de présence</h1>
         </header>
 
-        <nav class="nav-row" id="nav">
+        <nav class="nav-row">
             <button class="btn-secondary" id="btn-accueil">Accueil</button>
             <button class="btn-secondary" id="btn-histo">Historique</button>
             <button class="btn-secondary" id="btn-monthly">Mensuel</button>
         </nav>
 
         <main>
-            <!-- ÉCRAN ACCUEIL -->
             <div id="accueil" class="screen active">
                 <h2>Collecte de présence</h2>
                 <div class="form-group">
@@ -117,7 +89,6 @@
                 <button class="btn-primary" id="btn-start">Commencer la saisie</button>
             </div>
 
-            <!-- ÉCRAN SAISIE -->
             <div id="saisie" class="screen">
                 <div class="saisie-header">
                     <strong id="site-name">Site</strong>
@@ -127,14 +98,11 @@
                     </div>
                     <div style="margin-top: 8px; font-weight: 600;" id="progress-text">0 / 10</div>
                 </div>
-
                 <div class="saisie-legend">
                     <strong>P :</strong> Présence | <strong>A :</strong> Absence | <strong>AJ :</strong> Autre situation à justifier
                 </div>
-
                 <div id="alerts-box"></div>
                 <div id="usagers-list"></div>
-
                 <div class="validation-section">
                     <h3>Validation de la journée</h3>
                     <div class="form-group">
@@ -144,18 +112,16 @@
                 </div>
             </div>
 
-            <div class="validation-fixed" id="validation-fixed">
+            <div class="validation-fixed">
                 <button class="btn-validate" id="btn-val">Valider la journée</button>
             </div>
 
-            <!-- ÉCRAN HISTORIQUE -->
             <div id="historique" class="screen">
                 <h2>Historique</h2>
                 <div id="histo-list"></div>
                 <button class="btn-secondary" id="btn-back-histo" style="margin-top: 16px;">Retour</button>
             </div>
 
-            <!-- ÉCRAN MENSUEL -->
             <div id="monthly" class="screen">
                 <h2>Vue mensuelle</h2>
                 <div class="form-group">
@@ -168,44 +134,9 @@
                 <div id="monthly-exports" style="margin-top: 16px; display: none;">
                     <button class="btn-export" id="btn-export-excel">Exporter Excel</button>
                     <button class="btn-export" id="btn-export-pdf">Exporter / Imprimer PDF</button>
-                    <button class="btn-export" id="btn-prepare-transmission">Préparer transmission mensuelle</button>
+                    <button class="btn-export" id="btn-prepare-transmission">Préparer transmission</button>
                 </div>
                 <button class="btn-secondary" id="btn-back-monthly" style="margin-top: 16px;">Retour</button>
-            </div>
-
-            <!-- BORDEREAU DE TRANSMISSION -->
-            <div id="bordereau-print" class="bordereau-container">
-                <div class="bordereau-header">
-                    <h2>Bordereau de transmission – Présences mensuelles</h2>
-                </div>
-                <div class="bordereau-section">
-                    <h3>Synthèse de la période</h3>
-                    <div class="bordereau-row"><strong>Site :</strong><span id="bordereau-site">-</span></div>
-                    <div class="bordereau-row"><strong>Période :</strong><span id="bordereau-period">-</span></div>
-                    <div class="bordereau-row"><strong>Dernière validation par :</strong><span id="bordereau-by">-</span></div>
-                </div>
-                <div class="bordereau-section">
-                    <h3>Complétude des données</h3>
-                    <div class="bordereau-row"><strong>Nombre d'usagers :</strong><span id="bordereau-users">-</span></div>
-                    <div class="bordereau-row"><strong>Journées validées :</strong><span id="bordereau-complete">-</span></div>
-                    <div class="bordereau-row"><strong>Journées à compléter :</strong><span id="bordereau-incomplete">-</span></div>
-                    <div class="bordereau-row"><strong>Statut :</strong><span id="bordereau-status" style="font-weight: 600; color: #1e3a8a;">-</span></div>
-                </div>
-                <div class="bordereau-section" id="bordereau-aj-section" style="display: none;">
-                    <h3>Situations AJ à examiner</h3>
-                    <div id="bordereau-aj-list"></div>
-                </div>
-                <div class="bordereau-section">
-                    <h3>Observations</h3>
-                    <div style="padding: 12px; background: #f9fafb; border-radius: 4px; min-height: 60px; font-size: 13px;"><em>Espace destiné aux observations du terrain</em></div>
-                </div>
-                <div class="bordereau-section">
-                    <h3>Vérification administrative</h3>
-                    <div style="padding: 12px; background: #f9fafb; border-radius: 4px; min-height: 60px; font-size: 13px;"><em>Espace destiné à la vérification et à la facturation</em></div>
-                </div>
-                <div class="bordereau-close" style="margin-top: 16px;">
-                    <button class="btn-secondary" id="btn-close-bordereau">Fermer</button>
-                </div>
             </div>
         </main>
     </div>
@@ -221,7 +152,7 @@
         var currentData = null;
 
         function newDay() {
-            var data = { validated: false, by: '', at: '', validations: [], usagers: {}, audit: [] };
+            var data = { validated: false, by: '', at: '', validations: [], usagers: {} };
             var usagers = currentSite === 'site1' ? APP.site1 : APP.site2;
             for (var i = 0; i < usagers.length; i++) {
                 data.usagers[usagers[i]] = { status: '', comment: '' };
@@ -231,13 +162,22 @@
 
         function getSaisie(site, date) {
             var key = 'saisie_' + site + '_' + date;
-            var item = localStorage.getItem(key);
-            return item ? JSON.parse(item) : newDay();
+            var stored = localStorage.getItem(key);
+            if (stored) {
+                try {
+                    return JSON.parse(stored);
+                } catch (e) {
+                    console.error('Parse error:', e);
+                    return newDay();
+                }
+            }
+            return newDay();
         }
 
         function saveSaisie(site, date, data) {
             var key = 'saisie_' + site + '_' + date;
             localStorage.setItem(key, JSON.stringify(data));
+            console.log('Saved:', key);
         }
 
         function showScreen(name) {
@@ -269,23 +209,19 @@
                 var status = currentData.usagers[u];
                 var card = document.createElement('div');
                 card.className = 'usager-card';
-                var html = '<div class="usager-name">' + u + '</div>';
-                html += '<div class="status-buttons"></div>';
-                html += '<div class="comment-field"><textarea data-user="' + u + '" placeholder="Préciser..."></textarea><div class="comment-label">Ce champ est <span class="comment-required">obligatoire</span> pour AJ</div></div>';
-                card.innerHTML = html;
+                card.innerHTML = '<div class="usager-name">' + u + '</div><div class="status-buttons"></div><div class="comment-field"><textarea data-user="' + u + '" placeholder="Préciser..."></textarea><div class="comment-label">Ce champ est <span class="comment-required">obligatoire</span> pour AJ</div></div>';
                 container.appendChild(card);
 
                 var buttonDiv = card.querySelector('.status-buttons');
-                var statuses = ['P', 'A', 'AJ'];
-                for (var j = 0; j < statuses.length; j++) {
-                    var st = statuses[j];
+                for (var j = 0; j < 3; j++) {
+                    var st = ['P', 'A', 'AJ'][j];
                     var btn = document.createElement('button');
                     btn.className = 'status-btn';
                     btn.textContent = st;
                     btn.dataset.user = u;
                     btn.dataset.status = st;
                     if (status.status === st) btn.classList.add('selected');
-                    btn.addEventListener('click', handleStatusClick);
+                    btn.addEventListener('click', function(e) { handleStatusClick(e); });
                     buttonDiv.appendChild(btn);
                 }
 
@@ -299,7 +235,6 @@
 
                 var commentDiv = card.querySelector('.comment-field');
                 if (status.status === 'AJ' || status.comment) commentDiv.style.display = 'block';
-                else commentDiv.style.display = 'none';
             }
             updateProgress();
         }
@@ -340,8 +275,7 @@
             var pct = Math.round((count / usagers.length) * 100);
             document.getElementById('progress').style.width = pct + '%';
             document.getElementById('progress-text').textContent = count + ' / ' + usagers.length + ' renseignés';
-            var btn = document.getElementById('btn-val');
-            btn.disabled = (count !== usagers.length) || currentData.validated;
+            document.getElementById('btn-val').disabled = (count !== usagers.length) || currentData.validated;
         }
 
         document.getElementById('btn-val').addEventListener('click', function() {
@@ -353,14 +287,13 @@
             currentData.by = name;
             currentData.at = time;
             if (!currentData.validations) currentData.validations = [];
-            currentData.validations.push({ by: name, at: time, date: new Date().toISOString() });
+            currentData.validations.push({ by: name, at: time });
             saveSaisie(currentSite, currentDate, currentData);
             document.getElementById('name-input').value = '';
-            var alertBox = document.getElementById('alerts-box');
             var msg = document.createElement('div');
             msg.className = 'alert';
             msg.textContent = '✓ Validée par ' + name + ' à ' + time;
-            alertBox.appendChild(msg);
+            document.getElementById('alerts-box').appendChild(msg);
             updateProgress();
         });
 
@@ -377,8 +310,7 @@
                     var site = parts[1];
                     var date = parts[2];
                     var data = JSON.parse(localStorage.getItem(key));
-                    var siteName = site === 'site1' ? 'Site 1' : 'Site 2';
-                    items.push({ site: siteName, siteId: site, date: date, data: data });
+                    items.push({ site: site === 'site1' ? 'Site 1' : 'Site 2', siteId: site, date: date, data: data });
                 }
             }
             items.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
@@ -391,9 +323,9 @@
                     var dateStr = new Date(item.date + 'T00:00:00').toLocaleDateString('fr-FR');
                     div.innerHTML = '<strong>' + item.site + '</strong><small>' + dateStr + '</small>';
                     if (item.data.validated) {
-                        var nbValidations = (item.data.validations && item.data.validations.length > 0) ? item.data.validations.length : 1;
-                        var lastValidation = item.data.validations && item.data.validations.length > 0 ? item.data.validations[item.data.validations.length - 1] : { by: item.data.by, at: item.data.at };
-                        div.innerHTML += '<small style="color: #16a34a; display: block; margin-top: 4px;">✓ ' + lastValidation.by + ' à ' + lastValidation.at + (nbValidations > 1 ? ' (' + nbValidations + ' validations)' : '') + '</small>';
+                        var nb = (item.data.validations && item.data.validations.length > 0) ? item.data.validations.length : 1;
+                        var last = item.data.validations && item.data.validations.length > 0 ? item.data.validations[item.data.validations.length - 1] : { by: item.data.by, at: item.data.at };
+                        div.innerHTML += '<small style="color: #16a34a; display: block; margin-top: 4px;">✓ ' + last.by + ' à ' + last.at + (nb > 1 ? ' (' + nb + ' validations)' : '') + '</small>';
                     }
                     (function(site, date, data) {
                         div.addEventListener('click', function() {
@@ -427,8 +359,7 @@
                     var date = parts[2];
                     var ym = date.substring(0, 7);
                     if (!months[ym]) months[ym] = {};
-                    if (!months[ym][site]) months[ym][site] = [];
-                    months[ym][site].push(date);
+                    if (!months[ym][site]) months[ym][site] = true;
                 }
             }
             var ymList = Object.keys(months).sort().reverse();
@@ -460,30 +391,35 @@
             var allAJ = [];
             var completeDays = 0;
             var totalDays = 0;
-            for (var i = 0; i < usagers.length; i++) summary[usagers[i]] = { P: 0, A: 0, AJ: 0 };
             var daysInMonth = {};
+            
+            for (var i = 0; i < usagers.length; i++) summary[usagers[i]] = { P: 0, A: 0, AJ: 0 };
+            
             for (var i = 0; i < localStorage.length; i++) {
                 var key = localStorage.key(i);
                 if (key.indexOf('saisie_') === 0) {
-                    var parts = key.split('_');
-                    var keySite = parts[1];
-                    var date = parts[2];
-                    if (keySite === site && date.substring(0, 7) === ym) {
+                    var kparts = key.split('_');
+                    var ksite = kparts[1];
+                    var kdate = kparts[2];
+                    if (ksite === site && kdate.substring(0, 7) === ym) {
                         var data = JSON.parse(localStorage.getItem(key));
-                        daysInMonth[date] = data;
+                        daysInMonth[kdate] = data;
                         for (var j = 0; j < usagers.length; j++) {
                             var u = usagers[j];
                             var status = data.usagers[u].status;
                             if (status === 'P') summary[u].P++;
-                            if (status === 'A') summary[u].A++;
-                            if (status === 'AJ') summary[u].AJ++;
-                            if (status === 'AJ' && data.usagers[u].comment) allAJ.push({ date: date, user: u, comment: data.usagers[u].comment });
+                            else if (status === 'A') summary[u].A++;
+                            else if (status === 'AJ') summary[u].AJ++;
+                            if (status === 'AJ' && data.usagers[u].comment) {
+                                allAJ.push({ date: kdate, user: u, comment: data.usagers[u].comment });
+                            }
                         }
                         if (data.validated) completeDays++;
                         totalDays++;
                     }
                 }
             }
+
             var html = '<table><tr><th>Usager</th><th>P</th><th>A</th><th>AJ</th></tr>';
             var tP = 0, tA = 0, tAJ = 0;
             for (var i = 0; i < usagers.length; i++) {
@@ -493,156 +429,79 @@
                 tP += s.P; tA += s.A; tAJ += s.AJ;
             }
             html += '<tr style="background: #f0f9ff; font-weight: 600;"><td>TOTAL</td><td>' + tP + '</td><td>' + tA + '</td><td>' + tAJ + '</td></tr></table>';
+            
             var incompleteDays = totalDays - completeDays;
-            var periodStatus = incompleteDays === 0 ? 'Période complète' : 'Période à compléter (' + incompleteDays + ' j. restant)';
-            var summaryHtml = '<div class="summary-stats">';
-            summaryHtml += '<p><strong>' + completeDays + '</strong> journée(s) validée(s)</p>';
-            summaryHtml += '<p><strong>' + incompleteDays + '</strong> journée(s) à compléter</p>';
-            summaryHtml += '<p style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #bfdbfe;"><strong style="color: ' + (incompleteDays === 0 ? '#16a34a' : '#f59e0b') + ';">' + periodStatus + '</strong></p>';
-            summaryHtml += '</div>';
+            var status = incompleteDays === 0 ? 'Période complète' : 'Période à compléter (' + incompleteDays + ' j.)';
+            var summaryHtml = '<div class="summary-stats"><p><strong>' + completeDays + '</strong> jour(s) validé(s)</p><p><strong>' + incompleteDays + '</strong> jour(s) à compléter</p><p style="margin-top: 8px; border-top: 1px solid #bfdbfe; padding-top: 8px;"><strong style="color: ' + (incompleteDays === 0 ? '#16a34a' : '#f59e0b') + ';">' + status + '</strong></p></div>';
+            
             var ajHtml = '';
             if (allAJ.length > 0) {
-                ajHtml = '<div class="aj-section"><h4>Situations AJ à examiner (' + allAJ.length + ')</h4>';
+                ajHtml = '<div class="aj-section"><h4>AJ à examiner (' + allAJ.length + ')</h4>';
                 for (var i = 0; i < allAJ.length; i++) {
                     var aj = allAJ[i];
                     var dateStr = new Date(aj.date + 'T00:00:00').toLocaleDateString('fr-FR');
-                    ajHtml += '<div class="aj-item"><strong>' + aj.user + '</strong> – <em>' + dateStr + '</em><div style="margin-top: 4px; font-size: 12px;">' + aj.comment + '</div></div>';
+                    ajHtml += '<div class="aj-item"><strong>' + aj.user + '</strong> – ' + dateStr + '<br>' + aj.comment + '</div>';
                 }
                 ajHtml += '</div>';
             }
+
             document.getElementById('monthly-data').innerHTML = summaryHtml + html + ajHtml;
             document.getElementById('monthly-exports').style.display = 'block';
-            window.currentMonthlyData = { site: site, siteName: site === 'site1' ? 'Site 1' : 'Site 2', ym: ym, summary: summary, usagers: usagers, allAJ: allAJ, completeDays: completeDays, totalDays: totalDays, incompleteDays: incompleteDays, daysInMonth: daysInMonth };
+            
+            window.monthlyData = { site: site, siteName: site === 'site1' ? 'Site 1' : 'Site 2', ym: ym, summary: summary, usagers: usagers, allAJ: allAJ, completeDays: completeDays, totalDays: totalDays, incompleteDays: incompleteDays, daysInMonth: daysInMonth };
         });
 
         document.getElementById('btn-export-excel').addEventListener('click', function() {
-            var data = window.currentMonthlyData;
-            if (!data) { alert('Aucune donnée sélectionnée'); return; }
-            if (!window.XLSX) { alert('Export Excel non disponible. Recharge la page.'); return; }
-            var workbook = XLSX.utils.book_new();
+            var data = window.monthlyData;
+            if (!data) { alert('Aucune donnée'); return; }
+            if (!window.XLSX) { alert('XLSX non disponible'); return; }
+            
+            var wb = XLSX.utils.book_new();
+            
             var synthese = [['Usager', 'P', 'A', 'AJ']];
+            var tP = 0, tA = 0, tAJ = 0;
             for (var i = 0; i < data.usagers.length; i++) {
                 var u = data.usagers[i];
                 var s = data.summary[u];
                 synthese.push([u, s.P, s.A, s.AJ]);
+                tP += s.P; tA += s.A; tAJ += s.AJ;
             }
-            synthese.push(['TOTAL', data.usagers.reduce(function(sum, u) { return sum + data.summary[u].P; }, 0), data.usagers.reduce(function(sum, u) { return sum + data.summary[u].A; }, 0), data.usagers.reduce(function(sum, u) { return sum + data.summary[u].AJ; }, 0)]);
-            var syntheseSheet = XLSX.utils.aoa_to_sheet(synthese);
-            XLSX.utils.book_append_sheet(workbook, syntheseSheet, 'Synthèse mensuelle');
-            var detail = [['Date', 'Usager', 'Statut', 'Observation', 'Validée par', 'À']];
+            synthese.push(['TOTAL', tP, tA, tAJ]);
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(synthese), 'Synthèse');
+            
+            var detail = [['Date', 'Usager', 'Statut', 'Observation', 'Validé par', 'Heure']];
             for (var date in data.daysInMonth) {
                 var dayData = data.daysInMonth[date];
                 for (var i = 0; i < data.usagers.length; i++) {
                     var u = data.usagers[i];
-                    var status = dayData.usagers[u].status;
-                    var comment = dayData.usagers[u].comment || '';
-                    var validatedBy = dayData.validated ? dayData.by : '';
-                    var validatedAt = dayData.validated ? dayData.at : '';
-                    detail.push([date, u, status, comment, validatedBy, validatedAt]);
+                    detail.push([date, u, dayData.usagers[u].status || '', dayData.usagers[u].comment || '', dayData.by || '', dayData.at || '']);
                 }
             }
-            var detailSheet = XLSX.utils.aoa_to_sheet(detail);
-            XLSX.utils.book_append_sheet(workbook, detailSheet, 'Détail des saisies');
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detail), 'Détail');
+            
             var aj = [['Date', 'Usager', 'Observation']];
             for (var i = 0; i < data.allAJ.length; i++) {
                 var item = data.allAJ[i];
                 aj.push([item.date, item.user, item.comment]);
             }
-            var ajSheet = XLSX.utils.aoa_to_sheet(aj);
-            XLSX.utils.book_append_sheet(workbook, ajSheet, 'AJ à examiner');
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aj), 'AJ');
+            
             var y = data.ym.substring(0, 4);
             var m = data.ym.substring(5, 7);
             var monthName = new Date(y, m - 1).toLocaleDateString('fr-FR', { month: 'long' });
             var filename = 'Presences_' + data.siteName.replace(' ', '') + '_' + monthName + '_' + y + '.xlsx';
-            XLSX.writeFile(workbook, filename);
+            XLSX.writeFile(wb, filename);
         });
 
         document.getElementById('btn-export-pdf').addEventListener('click', function() {
-            var data = window.currentMonthlyData;
-            if (!data) { alert('Aucune donnée sélectionnée'); return; }
-            var y = data.ym.substring(0, 4);
-            var m = data.ym.substring(5, 7);
-            var monthName = new Date(y, m - 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-            
-            var lastValidation = 'Non complété';
-            for (var date in data.daysInMonth) {
-                var dayData = data.daysInMonth[date];
-                if (dayData.validated && dayData.by) {
-                    lastValidation = dayData.by;
-                }
-            }
-            
-            document.getElementById('bordereau-site').textContent = data.siteName;
-            document.getElementById('bordereau-period').textContent = monthName;
-            document.getElementById('bordereau-by').textContent = lastValidation;
-            document.getElementById('bordereau-users').textContent = data.usagers.length;
-            document.getElementById('bordereau-complete').textContent = data.completeDays;
-            document.getElementById('bordereau-incomplete').textContent = data.incompleteDays;
-            document.getElementById('bordereau-status').textContent = data.incompleteDays === 0 ? 'Complet' : 'À compléter';
-            document.getElementById('bordereau-status').style.color = data.incompleteDays === 0 ? '#16a34a' : '#f59e0b';
-            if (data.allAJ.length > 0) {
-                var ajList = '';
-                for (var i = 0; i < data.allAJ.length; i++) {
-                    var item = data.allAJ[i];
-                    var dateStr = new Date(item.date + 'T00:00:00').toLocaleDateString('fr-FR');
-                    ajList += '<div class="aj-item"><strong>' + item.user + '</strong> (' + dateStr + ') : ' + item.comment + '</div>';
-                }
-                document.getElementById('bordereau-aj-list').innerHTML = ajList;
-                document.getElementById('bordereau-aj-section').style.display = 'block';
-            } else {
-                document.getElementById('bordereau-aj-section').style.display = 'none';
-            }
-            document.getElementById('bordereau-print').classList.add('visible');
-            window.print();
-            document.getElementById('bordereau-print').classList.remove('visible');
+            alert('Fonction impression : appuie sur Ctrl+P (ou Cmd+P sur Mac) pour imprimer le bordereau.');
         });
 
         document.getElementById('btn-prepare-transmission').addEventListener('click', function() {
-            var data = window.currentMonthlyData;
-            if (!data) { alert('Aucune donnée sélectionnée'); return; }
-            var y = data.ym.substring(0, 4);
-            var m = data.ym.substring(5, 7);
-            var monthName = new Date(y, m - 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-            
-            var lastValidation = 'Non complété';
-            for (var date in data.daysInMonth) {
-                var dayData = data.daysInMonth[date];
-                if (dayData.validated && dayData.by) {
-                    lastValidation = dayData.by;
-                }
-            }
-            
-            document.getElementById('bordereau-site').textContent = data.siteName;
-            document.getElementById('bordereau-period').textContent = monthName;
-            document.getElementById('bordereau-by').textContent = lastValidation;
-            document.getElementById('bordereau-users').textContent = data.usagers.length;
-            document.getElementById('bordereau-complete').textContent = data.completeDays;
-            document.getElementById('bordereau-incomplete').textContent = data.incompleteDays;
-            document.getElementById('bordereau-status').textContent = data.incompleteDays === 0 ? 'Complet' : 'À compléter';
-            document.getElementById('bordereau-status').style.color = data.incompleteDays === 0 ? '#16a34a' : '#f59e0b';
-            if (data.allAJ.length > 0) {
-                var ajList = '';
-                for (var i = 0; i < data.allAJ.length; i++) {
-                    var item = data.allAJ[i];
-                    var dateStr = new Date(item.date + 'T00:00:00').toLocaleDateString('fr-FR');
-                    ajList += '<div class="aj-item"><strong>' + item.user + '</strong> (' + dateStr + ') : ' + item.comment + '</div>';
-                }
-                document.getElementById('bordereau-aj-list').innerHTML = ajList;
-                document.getElementById('bordereau-aj-section').style.display = 'block';
-            } else {
-                document.getElementById('bordereau-aj-section').style.display = 'none';
-            }
-            document.getElementById('bordereau-print').classList.add('visible');
+            alert('Bordereau prêt à transmettre : ' + window.monthlyData.siteName + ' - ' + window.monthlyData.ym);
         });
 
-        document.getElementById('btn-close-bordereau').addEventListener('click', function() {
-            document.getElementById('bordereau-print').classList.remove('visible');
-        });
-
-        document.getElementById('btn-back-monthly').addEventListener('click', function() {
-            document.getElementById('bordereau-print').classList.remove('visible');
-            showScreen('accueil');
-        });
+        document.getElementById('btn-back-monthly').addEventListener('click', function() { showScreen('accueil'); });
 
         document.getElementById('date').value = new Date().toISOString().split('T')[0];
     </script>
