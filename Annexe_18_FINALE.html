@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Collecte Présence</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: system-ui, -apple-system, sans-serif; background: #f5f5f5; color: #333; }
@@ -451,50 +451,164 @@
             window.monthlyData = { site: site, siteName: site === 'site1' ? 'Site 1' : 'Site 2', ym: ym, summary: summary, usagers: usagers, allAJ: allAJ, completeDays: completeDays, totalDays: totalDays, incompleteDays: incompleteDays, daysInMonth: daysInMonth };
         });
 
+        function csvEscape(s) {
+            if (!s) return '';
+            if (typeof s !== 'string') s = String(s);
+            if (s.indexOf(',') > -1 || s.indexOf('"') > -1 || s.indexOf('\n') > -1) {
+                return '"' + s.replace(/"/g, '""') + '"';
+            }
+            return s;
+        }
+
+        function downloadCSV(filename, content) {
+            var blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+            var link = document.createElement('a');
+            var url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         document.getElementById('btn-export-excel').addEventListener('click', function() {
             var data = window.monthlyData;
             if (!data) { alert('Aucune donnée'); return; }
-            if (!window.XLSX) { alert('XLSX non disponible'); return; }
-            
-            var wb = XLSX.utils.book_new();
-            
-            var synthese = [['Usager', 'P', 'A', 'AJ']];
-            var tP = 0, tA = 0, tAJ = 0;
-            for (var i = 0; i < data.usagers.length; i++) {
-                var u = data.usagers[i];
-                var s = data.summary[u];
-                synthese.push([u, s.P, s.A, s.AJ]);
-                tP += s.P; tA += s.A; tAJ += s.AJ;
-            }
-            synthese.push(['TOTAL', tP, tA, tAJ]);
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(synthese), 'Synthèse');
-            
-            var detail = [['Date', 'Usager', 'Statut', 'Observation', 'Validé par', 'Heure']];
-            for (var date in data.daysInMonth) {
-                var dayData = data.daysInMonth[date];
-                for (var i = 0; i < data.usagers.length; i++) {
-                    var u = data.usagers[i];
-                    detail.push([date, u, dayData.usagers[u].status || '', dayData.usagers[u].comment || '', dayData.by || '', dayData.at || '']);
-                }
-            }
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detail), 'Détail');
-            
-            var aj = [['Date', 'Usager', 'Observation']];
-            for (var i = 0; i < data.allAJ.length; i++) {
-                var item = data.allAJ[i];
-                aj.push([item.date, item.user, item.comment]);
-            }
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aj), 'AJ');
             
             var y = data.ym.substring(0, 4);
             var m = data.ym.substring(5, 7);
             var monthName = new Date(y, m - 1).toLocaleDateString('fr-FR', { month: 'long' });
-            var filename = 'Presences_' + data.siteName.replace(' ', '') + '_' + monthName + '_' + y + '.xlsx';
-            XLSX.writeFile(wb, filename);
+            var filename = 'Presences_' + data.siteName.replace(' ', '') + '_' + monthName + '_' + y + '.csv';
+            
+            var lines = [];
+            lines.push('SYNTHÈSE MENSUELLE');
+            lines.push(data.siteName + ' - ' + monthName + ' ' + y);
+            lines.push('');
+            lines.push('Usager,P,A,AJ');
+            var tP = 0, tA = 0, tAJ = 0;
+            for (var i = 0; i < data.usagers.length; i++) {
+                var u = data.usagers[i];
+                var s = data.summary[u];
+                lines.push(csvEscape(u) + ',' + s.P + ',' + s.A + ',' + s.AJ);
+                tP += s.P; tA += s.A; tAJ += s.AJ;
+            }
+            lines.push('TOTAL,' + tP + ',' + tA + ',' + tAJ);
+            lines.push('');
+            lines.push(data.completeDays + ' jour(s) validé(s) / ' + data.incompleteDays + ' jour(s) à compléter');
+            
+            downloadCSV(filename, lines.join('\n'));
         });
 
         document.getElementById('btn-export-pdf').addEventListener('click', function() {
-            alert('Fonction impression : appuie sur Ctrl+P (ou Cmd+P sur Mac) pour imprimer le bordereau.');
+            var data = window.monthlyData;
+            if (!data) { alert('Aucune donnée'); return; }
+            
+            var y = data.ym.substring(0, 4);
+            var m = data.ym.substring(5, 7);
+            var monthName = new Date(y, m - 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+            var now = new Date();
+            var dateStr = now.toLocaleDateString('fr-FR');
+            
+            var html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bordereau</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1e40af; padding-bottom: 15px; }
+        .header h1 { margin: 0; color: #1e40af; font-size: 20px; }
+        .header p { margin: 5px 0; font-size: 13px; }
+        .section { margin-bottom: 25px; }
+        .section h3 { background: #f0f9ff; padding: 10px; margin: 0 0 10px 0; color: #1e40af; border-left: 4px solid #1e40af; font-size: 14px; }
+        .info-row { display: flex; margin-bottom: 8px; font-size: 13px; }
+        .info-label { font-weight: 600; width: 140px; }
+        .info-value { flex: 1; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+        table th, table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        table th { background: #f0f9ff; color: #1e40af; font-weight: 600; }
+        .alert { background: #fef3c7; border-left: 3px solid #f59e0b; padding: 10px; margin-top: 15px; font-size: 12px; }
+        @media print {
+            body { margin: 0; }
+            button { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Bordereau de transmission</h1>
+        <p>Collecte des journées de présence</p>
+    </div>
+    
+    <div class="section">
+        <h3>Synthèse de la période</h3>
+        <div class="info-row">
+            <div class="info-label">Site / Dispositif :</div>
+            <div class="info-value"><strong>${data.siteName}</strong></div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Période :</div>
+            <div class="info-value"><strong>${monthName}</strong></div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Journées validées :</div>
+            <div class="info-value"><strong>${data.completeDays}</strong></div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Journées à compléter :</div>
+            <div class="info-value"><strong>${data.incompleteDays}</strong></div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h3>Complétude des données</h3>
+        <table>
+            <tr>
+                <th>Usager</th>
+                <th>P</th>
+                <th>A</th>
+                <th>AJ</th>
+            </tr>`;
+            
+            var tP = 0, tA = 0, tAJ = 0;
+            for (var i = 0; i < data.usagers.length; i++) {
+                var u = data.usagers[i];
+                var s = data.summary[u];
+                html += `<tr><td>${u}</td><td>${s.P}</td><td>${s.A}</td><td>${s.AJ}</td></tr>`;
+                tP += s.P; tA += s.A; tAJ += s.AJ;
+            }
+            html += `<tr style="background: #f0f9ff; font-weight: 600;"><td>TOTAL</td><td>${tP}</td><td>${tA}</td><td>${tAJ}</td></tr></table>
+    </div>`;
+            
+            if (data.allAJ.length > 0) {
+                html += `<div class="section"><h3>Autres situations à examiner (${data.allAJ.length})</h3><table><tr><th>Date</th><th>Usager</th><th>Observation</th></tr>`;
+                for (var i = 0; i < data.allAJ.length; i++) {
+                    var aj = data.allAJ[i];
+                    html += `<tr><td>${aj.date}</td><td>${aj.user}</td><td>${aj.comment}</td></tr>`;
+                }
+                html += `</table></div>`;
+            }
+            
+            html += `<div class="section"><h3>Informations administratives</h3>
+        <div class="info-row">
+            <div class="info-label">Document généré :</div>
+            <div class="info-value">${dateStr}</div>
+        </div>
+    </div>
+    
+    <div class="alert">
+        <strong>À imprimer et transmettre au service administratif</strong>
+    </div>
+    
+    <button onclick="window.print()" style="margin-top: 20px; padding: 12px 20px; background: #1e40af; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer;">Imprimer / Enregistrer PDF</button>
+</body>
+</html>`;
+            
+            var w = window.open('', 'bordereau', 'height=600,width=800');
+            w.document.write(html);
+            w.document.close();
         });
 
         document.getElementById('btn-prepare-transmission').addEventListener('click', function() {
