@@ -24,6 +24,8 @@
         .btn-validate { background: #ea580c; color: white; }
         .btn-validate:disabled { background: #ccc; cursor: not-allowed; }
         .btn-export { background: #7c3aed; color: white; font-size: 13px; }
+        .btn-export:disabled { background: #ccc; cursor: not-allowed; }
+        .transmission-msg { margin-top: 8px; font-size: 13px; font-weight: 600; }
         .nav-row { display: flex; gap: 8px; padding: 8px 16px; background: white; border-bottom: 1px solid #e5e7eb; }
         .nav-row button { flex: 1; margin-top: 0; font-size: 12px; }
         .saisie-header { background: #f0f9ff; padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; }
@@ -42,7 +44,7 @@
         .comment-required { color: #dc2626; font-weight: 600; }
         .validation-section { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; padding: 16px; margin-top: 20px; margin-bottom: 100px; }
         .validation-section h3 { margin-bottom: 12px; color: #92400e; font-size: 14px; }
-        .validation-fixed { position: fixed; bottom: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto; background: white; border-top: 1px solid #e5e7eb; padding: 12px 16px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); z-index: 99; }
+        .validation-fixed { position: fixed; bottom: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto; background: white; border-top: 1px solid #e5e7eb; padding: 12px 16px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); z-index: 99; display: none; }
         .validation-fixed button { margin-top: 0; }
         .alert { background: #dcfce7; color: #166534; padding: 12px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; border-left: 4px solid #16a34a; }
         .historique-item { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; margin-bottom: 8px; cursor: pointer; }
@@ -57,6 +59,13 @@
         .aj-section { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 12px; margin-top: 16px; font-size: 13px; }
         .aj-section h4 { color: #92400e; margin-bottom: 8px; }
         .aj-item { background: white; padding: 8px; border-radius: 4px; margin-bottom: 8px; border-left: 3px solid #f59e0b; }
+        .version-line { display: block; font-size: 12px; color: #444; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e5e7eb; }
+        .version-current { color: #16a34a; font-weight: 600; }
+        .btn-small { width: auto; padding: 6px 10px; font-size: 12px; margin-top: 6px; background: #1e40af; color: white; }
+        .trace-modified { color: #dc2626; font-weight: 600; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 200; display: none; align-items: center; justify-content: center; padding: 16px; }
+        .modal-box { background: white; border-radius: 8px; padding: 16px; max-width: 420px; width: 100%; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+        .modal-box p { font-size: 14px; line-height: 1.4; white-space: pre-line; }
     </style>
 </head>
 <body>
@@ -97,6 +106,7 @@
                         <div class="progress-fill" id="progress"></div>
                     </div>
                     <div style="margin-top: 8px; font-weight: 600;" id="progress-text">0 / 10</div>
+                    <div style="margin-top: 4px; font-size: 12px; color: #1e40af;" id="version-display"></div>
                 </div>
                 <div class="saisie-legend">
                     <strong>P :</strong> Présence | <strong>A :</strong> Absence | <strong>AJ :</strong> Autre situation à justifier
@@ -105,6 +115,10 @@
                 <div id="usagers-list"></div>
                 <div class="validation-section">
                     <h3>Validation de la journée</h3>
+                    <div id="reprendre-box" style="display: none; margin-bottom: 12px;">
+                        <p style="font-size: 13px;">Cette journée est validée. Pour la corriger sans perdre la version validée :</p>
+                        <button class="btn-secondary" id="btn-reprendre" style="margin-top: 8px;">Reprendre la saisie</button>
+                    </div>
                     <div class="form-group">
                         <label for="name-input">Prénom / NOM</label>
                         <input type="text" id="name-input" placeholder="Ex: Jean / DUPONT">
@@ -122,6 +136,14 @@
                 <button class="btn-secondary" id="btn-back-histo" style="margin-top: 16px;">Retour</button>
             </div>
 
+            <div id="version-view" class="screen">
+                <h2>Consultation d'une version</h2>
+                <div class="saisie-header" id="version-view-header"></div>
+                <div class="saisie-legend">Lecture seule – cette version archivée ne peut pas être modifiée.</div>
+                <div id="version-view-content"></div>
+                <button class="btn-secondary" id="btn-back-version" style="margin-top: 16px;">Retour à l'historique</button>
+            </div>
+
             <div id="monthly" class="screen">
                 <h2>Vue mensuelle</h2>
                 <div class="form-group">
@@ -132,13 +154,21 @@
                 </div>
                 <div id="monthly-data"></div>
                 <div id="monthly-exports" style="margin-top: 16px; display: none;">
-                    <button class="btn-export" id="btn-export-excel">Exporter Excel</button>
-                    <button class="btn-export" id="btn-export-pdf">Exporter / Imprimer PDF</button>
-                    <button class="btn-export" id="btn-prepare-transmission">Préparer transmission</button>
+                    <button class="btn-export" id="btn-export-excel">Exporter CSV</button>
+                    <button class="btn-export" id="btn-export-pdf">Imprimer / enregistrer en PDF</button>
+                    <button class="btn-export" id="btn-share">Partager / transmettre</button>
+                    <div class="transmission-msg" id="transmission-msg"></div>
                 </div>
                 <button class="btn-secondary" id="btn-back-monthly" style="margin-top: 16px;">Retour</button>
             </div>
         </main>
+    </div>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal-box">
+            <p id="modal-text"></p>
+            <div id="modal-buttons"></div>
+        </div>
     </div>
 
     <script>
@@ -146,6 +176,109 @@
             site1: ['Alice', 'Bob', 'Charlie', 'David', 'Emma', 'Frank', 'Grace', 'Henry', 'Iris', 'Jack'],
             site2: ['Kate', 'Leo', 'Mia', 'Noah', 'Olive', 'Peter', 'Quinn', 'Rachel', 'Sam', 'Tara']
         };
+
+        // ===== PARAMÉTRAGE DES JOURS ATTENDUS =====
+        // joursSemaine : jours d'ouverture du site (0 = dimanche, 1 = lundi, ... 6 = samedi).
+        // parMois : pour un mois donné ('AAAA-MM'), liste exacte des dates attendues,
+        //           qui remplace alors la règle joursSemaine (fermetures, ouverture partielle...).
+        // Exemple : parMois: { '2026-12': ['2026-12-01', '2026-12-02', '2026-12-03'] }
+        var JOURS_ATTENDUS = {
+            site1: { joursSemaine: [0, 1, 2, 3, 4, 5, 6], parMois: {} },
+            site2: { joursSemaine: [0, 1, 2, 3, 4, 5, 6], parMois: {} }
+        };
+
+        function getJoursAttendus(site, ym) {
+            var conf = JOURS_ATTENDUS[site];
+            if (!conf) return [];
+            if (conf.parMois && conf.parMois[ym]) return conf.parMois[ym].slice().sort();
+            var y = parseInt(ym.substring(0, 4), 10);
+            var m = parseInt(ym.substring(5, 7), 10);
+            var nbJours = new Date(y, m, 0).getDate();
+            var liste = [];
+            for (var d = 1; d <= nbJours; d++) {
+                if (conf.joursSemaine.indexOf(new Date(y, m - 1, d).getDay()) > -1) {
+                    liste.push(ym + '-' + (d < 10 ? '0' : '') + d);
+                }
+            }
+            return liste;
+        }
+
+        function formatDatesCourtes(dates) {
+            var out = [];
+            for (var i = 0; i < dates.length; i++) out.push(dates[i].substring(8, 10) + '/' + dates[i].substring(5, 7));
+            return out.join(', ');
+        }
+
+        // ===== OUTILS COMMUNS =====
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function heureCourante(d) {
+            return (d.getHours() < 10 ? '0' : '') + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+        }
+        function dateLocaleISO(d) {
+            return d.getFullYear() + '-' + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1) + '-' + (d.getDate() < 10 ? '0' : '') + d.getDate();
+        }
+        function formatDateFr(iso) {
+            if (!iso) return '';
+            return new Date(iso.length === 10 ? iso + 'T00:00:00' : iso).toLocaleDateString('fr-FR');
+        }
+
+        // ===== VERSIONS D'UNE JOURNÉE =====
+        // La version en cours reste stockée sous la clé habituelle saisie_<site>_<date>.
+        // Les versions validées antérieures sont conservées dans data.archives (jamais supprimées).
+        // Données anciennes sans champ "version" = version 1, sans archive.
+        function archiverVersion(data) {
+            if (!data.archives) data.archives = [];
+            data.archives.push({
+                version: data.version || 1,
+                usagers: JSON.parse(JSON.stringify(data.usagers)),
+                by: data.by || '',
+                at: data.at || '',
+                validatedAt: data.validatedAt || '',
+                archivedAt: new Date().toISOString()
+            });
+            data.version = (data.version || 1) + 1;
+            data.validated = false;
+            data.by = '';
+            data.at = '';
+            data.validatedAt = '';
+        }
+
+        // ===== TRACES DE TRANSMISSION =====
+        // Stockées sous transmission_<site>_<mois> (liste, jamais écrasée).
+        function cleTransmission(site, ym) { return 'transmission_' + site + '_' + ym; }
+        function getTransmissions(site, ym) {
+            try {
+                var r = localStorage.getItem(cleTransmission(site, ym));
+                return r ? JSON.parse(r) : [];
+            } catch (e) { return []; }
+        }
+        function empreinteMois(site, ym) {
+            var prefix = 'saisie_' + site + '_' + ym;
+            var keys = [];
+            for (var i = 0; i < localStorage.length; i++) {
+                var k = localStorage.key(i);
+                if (k.indexOf(prefix) === 0) keys.push(k);
+            }
+            keys.sort();
+            var str = '';
+            for (var i = 0; i < keys.length; i++) str += keys[i] + '=' + localStorage.getItem(keys[i]) + ';';
+            var h = 5381;
+            for (var i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+            return keys.length + '-' + (h >>> 0).toString(16);
+        }
+
+        // ===== STATUT DE LA PÉRIODE (transmission partielle ou complète) =====
+        function libelleStatut(complete, valides, attendus) {
+            return complete ? 'Période complète – prête à clôturer' : 'Transmission partielle – ' + valides + ' jour(s) validé(s) sur ' + attendus + ' jour(s) attendu(s)';
+        }
+        function libelleTrace(t) {
+            // Les traces enregistrées avant cette version n'étaient possibles que sur une période complète.
+            var fmt = t.format ? ' – ' + t.format : '';
+            if (!t.statut || t.statut === 'complete') return 'période complète' + (t.joursAttendus ? ' (' + t.joursValides + '/' + t.joursAttendus + ' jours)' : '') + fmt;
+            return 'transmission partielle (' + t.joursValides + '/' + t.joursAttendus + ' jours validés)' + fmt;
+        }
 
         var currentSite = '';
         var currentDate = '';
@@ -184,6 +317,7 @@
             var screens = document.querySelectorAll('.screen');
             for (var i = 0; i < screens.length; i++) screens[i].classList.remove('active');
             document.getElementById(name).classList.add('active');
+            document.querySelector('.validation-fixed').style.display = (name === 'saisie') ? 'block' : 'none';
         }
 
         document.getElementById('btn-start').addEventListener('click', function() {
@@ -228,15 +362,29 @@
                 var textarea = card.querySelector('textarea');
                 textarea.value = status.comment;
                 textarea.addEventListener('change', function() {
+                    if (currentData.usagers[this.dataset.user].comment === this.value) return;
+                    if (currentData.validated) {
+                        archiverVersion(currentData);
+                        document.getElementById('alerts-box').innerHTML = '';
+                    }
                     currentData.usagers[this.dataset.user].comment = this.value;
                     saveSaisie(currentSite, currentDate, currentData);
                     updateProgress();
+                    updateVersionInfo();
                 });
 
                 var commentDiv = card.querySelector('.comment-field');
                 if (status.status === 'AJ' || status.comment) commentDiv.style.display = 'block';
             }
             updateProgress();
+            updateVersionInfo();
+        }
+
+        function updateVersionInfo() {
+            var v = currentData.version || 1;
+            var nbArch = currentData.archives ? currentData.archives.length : 0;
+            document.getElementById('version-display').textContent = 'Version ' + v + ' – version actuelle' + (currentData.validated ? ' (validée)' : ' (non validée)') + (nbArch > 0 ? ' · ' + nbArch + ' version(s) antérieure(s) conservée(s)' : '');
+            document.getElementById('reprendre-box').style.display = currentData.validated ? 'block' : 'none';
         }
 
         function handleStatusClick(e) {
@@ -245,9 +393,8 @@
             var status = btn.dataset.status;
 
             if (currentData.validated) {
-                currentData.validated = false;
-                currentData.by = '';
-                currentData.at = '';
+                archiverVersion(currentData);
+                document.getElementById('alerts-box').innerHTML = '';
             }
 
             if (currentData.usagers[user].status === status) {
@@ -283,11 +430,13 @@
             if (!name) { alert('Entrer Prénom/NOM'); return; }
             var now = new Date();
             var time = (now.getHours() < 10 ? '0' : '') + now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+            if (!currentData.version) currentData.version = 1;
             currentData.validated = true;
             currentData.by = name;
             currentData.at = time;
+            currentData.validatedAt = now.toISOString();
             if (!currentData.validations) currentData.validations = [];
-            currentData.validations.push({ by: name, at: time });
+            currentData.validations.push({ by: name, at: time, date: dateLocaleISO(now), version: currentData.version });
             saveSaisie(currentSite, currentDate, currentData);
             document.getElementById('name-input').value = '';
             var msg = document.createElement('div');
@@ -295,6 +444,21 @@
             msg.textContent = '✓ Validée par ' + name + ' à ' + time;
             document.getElementById('alerts-box').appendChild(msg);
             updateProgress();
+            updateVersionInfo();
+        });
+
+        document.getElementById('btn-reprendre').addEventListener('click', function() {
+            if (!currentData || !currentData.validated) return;
+            var v = currentData.version || 1;
+            if (!confirm('Reprendre la saisie de cette journée ?\n\nLa version validée (version ' + v + ') sera conservée dans l\'historique, en lecture seule.\nUne nouvelle version vierge (version ' + (v + 1) + ') sera créée et devra être validée à nouveau.')) return;
+            archiverVersion(currentData);
+            var usagers = currentSite === 'site1' ? APP.site1 : APP.site2;
+            for (var u in currentData.usagers) currentData.usagers[u] = { status: '', comment: '' };
+            for (var i = 0; i < usagers.length; i++) currentData.usagers[usagers[i]] = { status: '', comment: '' };
+            saveSaisie(currentSite, currentDate, currentData);
+            document.getElementById('alerts-box').innerHTML = '';
+            document.getElementById('name-input').value = '';
+            renderSaisie();
         });
 
         document.getElementById('btn-accueil').addEventListener('click', function() { showScreen('accueil'); });
@@ -322,10 +486,33 @@
                     div.className = 'historique-item';
                     var dateStr = new Date(item.date + 'T00:00:00').toLocaleDateString('fr-FR');
                     div.innerHTML = '<strong>' + item.site + '</strong><small>' + dateStr + '</small>';
-                    if (item.data.validated) {
+                    var archives = item.data.archives || [];
+                    if (archives.length === 0 && item.data.validated) {
                         var nb = (item.data.validations && item.data.validations.length > 0) ? item.data.validations.length : 1;
                         var last = item.data.validations && item.data.validations.length > 0 ? item.data.validations[item.data.validations.length - 1] : { by: item.data.by, at: item.data.at };
                         div.innerHTML += '<small style="color: #16a34a; display: block; margin-top: 4px;">✓ ' + last.by + ' à ' + last.at + (nb > 1 ? ' (' + nb + ' validations)' : '') + '</small>';
+                    }
+                    if (archives.length > 0) {
+                        for (var k = 0; k < archives.length; k++) {
+                            var a = archives[k];
+                            var line = document.createElement('small');
+                            line.className = 'version-line';
+                            line.textContent = 'Version ' + a.version + ' · ' + item.site + ' · ' + dateStr + ' · validée par ' + a.by + (a.validatedAt ? ' le ' + formatDateFr(a.validatedAt) : '') + ' à ' + a.at;
+                            var b = document.createElement('button');
+                            b.className = 'btn-small';
+                            b.textContent = 'Consulter la version ' + a.version;
+                            (function(site, date, arch) {
+                                b.addEventListener('click', function(ev) { ev.stopPropagation(); showVersion(site, date, arch); });
+                            })(item.siteId, item.date, a);
+                            line.appendChild(document.createElement('br'));
+                            line.appendChild(b);
+                            div.appendChild(line);
+                        }
+                        var cur = document.createElement('small');
+                        cur.className = 'version-line version-current';
+                        var vCur = item.data.version || (archives.length + 1);
+                        cur.textContent = 'Version ' + vCur + ' (actuelle) · ' + item.site + ' · ' + dateStr + ' · ' + (item.data.validated ? 'validée par ' + item.data.by + (item.data.validatedAt ? ' le ' + formatDateFr(item.data.validatedAt) : '') + ' à ' + item.data.at : 'en cours de saisie, non validée');
+                        div.appendChild(cur);
                     }
                     (function(site, date, data) {
                         div.addEventListener('click', function() {
@@ -347,10 +534,28 @@
 
         document.getElementById('btn-back-histo').addEventListener('click', function() { showScreen('accueil'); });
 
+        function showVersion(site, date, a) {
+            var siteName = site === 'site1' ? 'Site 1' : 'Site 2';
+            var header = document.getElementById('version-view-header');
+            header.innerHTML = '<strong>' + escapeHtml(siteName) + ' – ' + formatDateFr(date) + '</strong>Version ' + a.version + ' (version archivée)<br>Validée par ' + escapeHtml(a.by) + (a.validatedAt ? ' le ' + formatDateFr(a.validatedAt) : '') + ' à ' + escapeHtml(a.at);
+            var html = '<table><tr><th>Usager</th><th>Statut</th><th>Commentaire</th></tr>';
+            var noms = Object.keys(a.usagers);
+            for (var i = 0; i < noms.length; i++) {
+                var st = a.usagers[noms[i]] || {};
+                html += '<tr><td>' + escapeHtml(noms[i]) + '</td><td>' + escapeHtml(st.status || '–') + '</td><td>' + escapeHtml(st.comment || '') + '</td></tr>';
+            }
+            html += '</table>';
+            document.getElementById('version-view-content').innerHTML = html;
+            showScreen('version-view');
+        }
+
+        document.getElementById('btn-back-version').addEventListener('click', function() { document.getElementById('btn-histo').click(); });
+
         document.getElementById('btn-monthly').addEventListener('click', function() {
             window.monthlyData = null;
             document.getElementById('monthly-data').innerHTML = '';
             document.getElementById('monthly-exports').style.display = 'none';
+            document.getElementById('transmission-msg').textContent = '';
             var select = document.getElementById('month-input');
             select.innerHTML = '<option value="">-- Choisir --</option>';
             var months = {};
@@ -385,7 +590,7 @@
         });
 
         document.getElementById('month-input').addEventListener('change', function() {
-            if (!this.value) { document.getElementById('monthly-data').innerHTML = ''; document.getElementById('monthly-exports').style.display = 'none'; return; }
+            if (!this.value) { window.monthlyData = null; document.getElementById('monthly-data').innerHTML = ''; document.getElementById('monthly-exports').style.display = 'none'; document.getElementById('transmission-msg').textContent = ''; return; }
             var parts = this.value.split('|');
             var site = parts[0];
             var ym = parts[1];
@@ -433,10 +638,44 @@
             }
             html += '<tr style="background: #f0f9ff; font-weight: 600;"><td>TOTAL</td><td>' + tP + '</td><td>' + tA + '</td><td>' + tAJ + '</td></tr></table>';
             
-            var incompleteDays = totalDays - completeDays;
-            var status = incompleteDays === 0 ? 'Période complète' : 'Période à compléter (' + incompleteDays + ' j.)';
-            var summaryHtml = '<div class="summary-stats"><p><strong>' + completeDays + '</strong> jour(s) validé(s)</p><p><strong>' + incompleteDays + '</strong> jour(s) à compléter</p><p style="margin-top: 8px; border-top: 1px solid #bfdbfe; padding-top: 8px;"><strong style="color: ' + (incompleteDays === 0 ? '#16a34a' : '#f59e0b') + ';">' + status + '</strong></p></div>';
+            var expectedDays = getJoursAttendus(site, ym);
+            var startedDates = [];
+            var missingDates = [];
+            for (var d in daysInMonth) {
+                if (!daysInMonth[d].validated) startedDates.push(d);
+            }
+            startedDates.sort();
+            for (var i = 0; i < expectedDays.length; i++) {
+                if (!daysInMonth[expectedDays[i]]) missingDates.push(expectedDays[i]);
+            }
+            var startedDays = startedDates.length;
+            var missingDays = missingDates.length;
+            var incompleteDays = startedDays + missingDays;
+            var isComplete = incompleteDays === 0 && expectedDays.length > 0;
+            var validatedExpected = 0;
+            for (var i = 0; i < expectedDays.length; i++) {
+                if (daysInMonth[expectedDays[i]] && daysInMonth[expectedDays[i]].validated) validatedExpected++;
+            }
+            var statutPeriode = libelleStatut(isComplete, validatedExpected, expectedDays.length);
+            var status = statutPeriode;
+            var summaryHtml = '<div class="summary-stats"><p><strong>' + expectedDays.length + '</strong> jour(s) attendu(s)</p><p><strong>' + completeDays + '</strong> jour(s) validé(s)</p><p><strong>' + startedDays + '</strong> jour(s) commencé(s) non validé(s)' + (startedDays > 0 ? '<br><small>' + formatDatesCourtes(startedDates) + '</small>' : '') + '</p><p><strong>' + missingDays + '</strong> jour(s) attendu(s) jamais saisi(s)' + (missingDays > 0 ? '<br><small>' + formatDatesCourtes(missingDates) + '</small>' : '') + '</p><p style="margin-top: 8px; border-top: 1px solid #bfdbfe; padding-top: 8px;"><strong style="color: ' + (isComplete ? '#16a34a' : '#f59e0b') + ';">' + status + '</strong></p></div>';
             
+            var traces = getTransmissions(site, ym);
+            var modifieApresTransmission = false;
+            var traceHtml = '';
+            if (traces.length > 0) {
+                var last = traces[traces.length - 1];
+                modifieApresTransmission = last.empreinte !== empreinteMois(site, ym);
+                traceHtml = '<div class="summary-stats"><p><strong>Transmission préparée le ' + formatDateFr(last.date) + ' à ' + last.heure + '</strong> – ' + libelleTrace(last) + '</p>';
+                if (modifieApresTransmission) traceHtml += '<p class="trace-modified">⚠ Période modifiée après cette transmission</p>';
+                if (traces.length > 1) {
+                    var prev = [];
+                    for (var i = 0; i < traces.length - 1; i++) prev.push(formatDateFr(traces[i].date) + ' à ' + traces[i].heure + ' – ' + libelleTrace(traces[i]));
+                    traceHtml += '<p style="font-size: 12px; color: #666;">Préparations précédentes : ' + prev.join(' ; ') + '</p>';
+                }
+                traceHtml += '</div>';
+            }
+
             var ajHtml = '';
             if (allAJ.length > 0) {
                 ajHtml = '<div class="aj-section"><h4>AJ à examiner (' + allAJ.length + ')</h4>';
@@ -448,10 +687,20 @@
                 ajHtml += '</div>';
             }
 
-            document.getElementById('monthly-data').innerHTML = summaryHtml + html + ajHtml;
+            document.getElementById('monthly-data').innerHTML = summaryHtml + traceHtml + html + ajHtml;
             document.getElementById('monthly-exports').style.display = 'block';
             
-            window.monthlyData = { site: site, siteName: site === 'site1' ? 'Site 1' : 'Site 2', ym: ym, summary: summary, usagers: usagers, allAJ: allAJ, completeDays: completeDays, totalDays: totalDays, incompleteDays: incompleteDays, daysInMonth: daysInMonth };
+            window.monthlyData = { site: site, siteName: site === 'site1' ? 'Site 1' : 'Site 2', ym: ym, summary: summary, usagers: usagers, allAJ: allAJ, completeDays: completeDays, totalDays: totalDays, incompleteDays: incompleteDays, daysInMonth: daysInMonth, expectedDays: expectedDays.length, startedDays: startedDays, missingDays: missingDays, isComplete: isComplete, validatedExpected: validatedExpected, statutPeriode: statutPeriode, transmissions: traces, modifieApresTransmission: modifieApresTransmission };
+
+            var msgTrans = document.getElementById('transmission-msg');
+            var aucunJourValide = completeDays === 0;
+            document.getElementById('btn-share').disabled = aucunJourValide;
+            if (aucunJourValide) {
+                msgTrans.style.color = '#dc2626';
+                msgTrans.textContent = 'Transmission impossible : aucune journée validée sur la période.';
+            } else {
+                msgTrans.textContent = '';
+            }
         });
 
         function csvEscape(s) {
@@ -475,10 +724,7 @@
             document.body.removeChild(link);
         }
 
-        document.getElementById('btn-export-excel').addEventListener('click', function() {
-            var data = window.monthlyData;
-            if (!data) { alert('Aucune donnée'); return; }
-            
+        function buildCSV(data) {            
             var y = data.ym.substring(0, 4);
             var m = data.ym.substring(5, 7);
             var monthName = new Date(y, m - 1).toLocaleDateString('fr-FR', { month: 'long' });
@@ -498,15 +744,20 @@
             }
             lines.push('TOTAL,' + tP + ',' + tA + ',' + tAJ);
             lines.push('');
-            lines.push(data.completeDays + ' jour(s) validé(s) / ' + data.incompleteDays + ' jour(s) à compléter');
+            lines.push('Statut : ' + data.statutPeriode);
+            lines.push(data.completeDays + ' jour(s) validé(s) / ' + data.incompleteDays + ' jour(s) à compléter (dont ' + data.startedDays + ' commencé(s) non validé(s) et ' + data.missingDays + ' jamais saisi(s))');
             
-            downloadCSV(filename, lines.join('\n'));
-        });
+            return { filename: filename, content: lines.join('\n') };
+        }
 
-        document.getElementById('btn-export-pdf').addEventListener('click', function() {
+        document.getElementById('btn-export-excel').addEventListener('click', function() {
             var data = window.monthlyData;
             if (!data) { alert('Aucune donnée'); return; }
-            
+            var csv = buildCSV(data);
+            downloadCSV(csv.filename, csv.content);
+        });
+
+        function buildBordereauHTML(data, autoPrint) {            
             var y = data.ym.substring(0, 4);
             var m = data.ym.substring(5, 7);
             var monthName = new Date(y, m - 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
@@ -554,6 +805,14 @@
         <div class="info-row">
             <div class="info-label">Période :</div>
             <div class="info-value"><strong>${monthName}</strong></div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Statut :</div>
+            <div class="info-value"><strong style="color: ${data.isComplete ? '#16a34a' : '#b45309'};">${data.isComplete ? 'PÉRIODE COMPLÈTE' : 'TRANSMISSION PARTIELLE'}</strong><br>${data.statutPeriode}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Journées attendues :</div>
+            <div class="info-value"><strong>${data.expectedDays}</strong></div>
         </div>
         <div class="info-row">
             <div class="info-label">Journées validées :</div>
@@ -606,16 +865,125 @@
     </div>
     
     <button onclick="window.print()" style="margin-top: 20px; padding: 12px 20px; background: #1e40af; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer;">Imprimer / Enregistrer PDF</button>
+    ${autoPrint ? '<script>window.addEventListener("load", function() { setTimeout(function() { window.focus(); window.print(); }, 300); });<\/script>' : ''}
 </body>
 </html>`;
             
+            return html;
+        }
+
+        // Ouvre le bordereau et lance la boîte d'impression / enregistrement PDF. Renvoie false si la fenêtre est bloquée.
+        function ouvrirBordereauPDF(data) {
+            var html = buildBordereauHTML(data, true);
             var w = window.open('', 'bordereau', 'height=600,width=800');
+            if (!w) {
+                alert('Le navigateur bloque l\'ouverture du bordereau.\nAutorisez les fenêtres surgissantes pour ce site (sur iPhone : Réglages > Safari > désactiver « Bloquer les fenêtres surgissantes »), puis cliquez à nouveau.');
+                return false;
+            }
+            w.document.open();
             w.document.write(html);
             w.document.close();
+            w.focus();
+            return true;
+        }
+
+        document.getElementById('btn-export-pdf').addEventListener('click', function() {
+            var data = window.monthlyData;
+            if (!data) { alert('Aucune donnée'); return; }
+            ouvrirBordereauPDF(data);
         });
 
-        document.getElementById('btn-prepare-transmission').addEventListener('click', function() {
-            alert('Bordereau prêt à transmettre : ' + window.monthlyData.siteName + ' - ' + window.monthlyData.ym);
+        // ===== FENÊTRE DE CONFIRMATION (Annuler / Transmettre quand même) =====
+        function ouvrirModale(texte, boutons) {
+            document.getElementById('modal-text').textContent = texte;
+            var zone = document.getElementById('modal-buttons');
+            zone.innerHTML = '';
+            for (var i = 0; i < boutons.length; i++) {
+                (function(def) {
+                    var b = document.createElement('button');
+                    b.className = def.cls;
+                    b.textContent = def.label;
+                    b.addEventListener('click', function() { fermerModale(); if (def.action) def.action(); });
+                    zone.appendChild(b);
+                })(boutons[i]);
+            }
+            document.getElementById('modal').style.display = 'flex';
+        }
+        function fermerModale() { document.getElementById('modal').style.display = 'none'; }
+
+        // Trace de chaque transmission (jamais écrasée) : date, heure, statut de la période, format.
+        function enregistrerTransmission(data, format) {
+            var now = new Date();
+            var traces = getTransmissions(data.site, data.ym);
+            traces.push({ site: data.site, mois: data.ym, date: dateLocaleISO(now), heure: heureCourante(now), horodatage: now.toISOString(), statut: data.isComplete ? 'complete' : 'partielle', joursValides: data.validatedExpected, joursAttendus: data.expectedDays, format: format, empreinte: empreinteMois(data.site, data.ym) });
+            localStorage.setItem(cleTransmission(data.site, data.ym), JSON.stringify(traces));
+            document.getElementById('month-input').dispatchEvent(new Event('change'));
+            var msgTrans = document.getElementById('transmission-msg');
+            msgTrans.style.color = data.isComplete ? '#16a34a' : '#b45309';
+            msgTrans.textContent = (data.isComplete ? 'Transmission ' + format + ' – période complète.' : 'Transmission partielle ' + format + ' – ' + data.validatedExpected + ' jour(s) validé(s) sur ' + data.expectedDays + ' jour(s) attendu(s).');
+        }
+
+        function buildResumeTexte(data) {
+            var y = data.ym.substring(0, 4);
+            var m = data.ym.substring(5, 7);
+            var monthName = new Date(y, m - 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+            var tP = 0, tA = 0, tAJ = 0;
+            for (var i = 0; i < data.usagers.length; i++) {
+                var s = data.summary[data.usagers[i]];
+                tP += s.P; tA += s.A; tAJ += s.AJ;
+            }
+            var lignes = [];
+            lignes.push('Bordereau de transmission – journées de présence');
+            lignes.push('Site / Dispositif : ' + data.siteName);
+            lignes.push('Période : ' + monthName);
+            lignes.push('Statut : ' + data.statutPeriode);
+            lignes.push('Jours attendus : ' + data.expectedDays + ' – jours validés : ' + data.completeDays);
+            lignes.push('Totaux : P = ' + tP + ' / A = ' + tA + ' / AJ = ' + tAJ);
+            if (data.allAJ.length > 0) lignes.push('Autres situations à examiner : ' + data.allAJ.length);
+            if (data.transmissions && data.transmissions.length > 0) {
+                var last = data.transmissions[data.transmissions.length - 1];
+                lignes.push('Transmission préparée le ' + formatDateFr(last.date) + ' à ' + last.heure + ' – ' + libelleTrace(last) + (data.modifieApresTransmission ? ' (période modifiée depuis)' : ''));
+            }
+            lignes.push('Document généré le ' + new Date().toLocaleDateString('fr-FR'));
+            return lignes.join('\n');
+        }
+
+        function transmettreCSV(data) {
+            var csv = buildCSV(data);
+            var fichier = null;
+            try { fichier = new File(['\uFEFF' + csv.content], csv.filename, { type: 'text/csv' }); } catch (e) { fichier = null; }
+            var peutPartager = fichier && navigator.share && typeof navigator.canShare === 'function' && navigator.canShare({ files: [fichier] });
+            if (!peutPartager) {
+                downloadCSV(csv.filename, csv.content);
+                enregistrerTransmission(data, 'CSV');
+                alert('Le partage de fichier n\'est pas disponible sur ce navigateur.\nLe fichier CSV a été téléchargé : vous pouvez le joindre à un e-mail ou un message.');
+                return;
+            }
+            navigator.share({ files: [fichier], title: 'Présences ' + data.siteName + ' – ' + data.ym, text: buildResumeTexte(data) }).then(function() {
+                enregistrerTransmission(data, 'CSV');
+            }).catch(function(err) {
+                if (err && err.name === 'AbortError') return;
+                downloadCSV(csv.filename, csv.content);
+                enregistrerTransmission(data, 'CSV');
+                alert('Le partage n\'a pas pu aboutir.\nLe fichier CSV a été téléchargé : vous pouvez le joindre à un e-mail ou un message.');
+            });
+        }
+
+        document.getElementById('btn-share').addEventListener('click', function() {
+            var data = window.monthlyData;
+            if (!data) { alert('Aucune donnée'); return; }
+            if (data.completeDays === 0) {
+                var msgTrans = document.getElementById('transmission-msg');
+                msgTrans.style.color = '#dc2626';
+                msgTrans.textContent = 'Transmission impossible : aucune journée validée sur la période.';
+                alert(msgTrans.textContent);
+                return;
+            }
+            if (data.isComplete) { transmettreCSV(data); return; }
+            ouvrirModale('Le mois n\'est pas complet. ' + data.validatedExpected + ' journée(s) sur ' + data.expectedDays + ' sont validées.\nVoulez-vous transmettre quand même ?', [
+                { label: 'Annuler', cls: 'btn-secondary' },
+                { label: 'Transmettre quand même', cls: 'btn-validate', action: function() { transmettreCSV(data); } }
+            ]);
         });
 
         document.getElementById('btn-back-monthly').addEventListener('click', function() { showScreen('accueil'); });
