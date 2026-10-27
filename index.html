@@ -66,6 +66,9 @@
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 200; display: none; align-items: center; justify-content: center; padding: 16px; }
         .modal-box { background: white; border-radius: 8px; padding: 16px; max-width: 420px; width: 100%; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
         .modal-box p { font-size: 14px; line-height: 1.4; white-space: pre-line; }
+        .reset-row { text-align: right; padding: 0 16px 6px; background: white; border-bottom: 1px solid #e5e7eb; }
+        .btn-reset-demo { width: auto; margin: 0; padding: 2px 0; background: none; color: #9ca3af; font-size: 11px; font-weight: 400; text-decoration: underline; }
+        .btn-danger { background: #dc2626; color: white; }
     </style>
 </head>
 <body>
@@ -79,6 +82,9 @@
             <button class="btn-secondary" id="btn-histo">Historique</button>
             <button class="btn-secondary" id="btn-monthly">Mensuel</button>
         </nav>
+        <div class="reset-row">
+            <button class="btn-reset-demo" id="btn-reset-demo">Réinitialiser la démonstration</button>
+        </div>
 
         <main>
             <div id="accueil" class="screen active">
@@ -987,6 +993,37 @@
         });
 
         document.getElementById('btn-back-monthly').addEventListener('click', function() { showScreen('accueil'); });
+
+        // ===== RÉINITIALISATION DE LA DÉMONSTRATION =====
+        // Supprime uniquement les données de cette annexe (clés « saisie_ » et « transmission_ »).
+        // Les autres données enregistrées sur le même domaine (autres annexes) ne sont pas touchées.
+        var PREFIXES_ANNEXE_18 = ['saisie_', 'transmission_'];
+
+        function reinitialiserDemonstration() {
+            // Liste établie avant suppression : supprimer pendant le parcours décalerait les index
+            var aSupprimer = [];
+            for (var i = 0; i < localStorage.length; i++) {
+                var k = localStorage.key(i);
+                for (var j = 0; j < PREFIXES_ANNEXE_18.length; j++) {
+                    if (k && k.indexOf(PREFIXES_ANNEXE_18[j]) === 0) { aSupprimer.push(k); break; }
+                }
+            }
+            for (var i = 0; i < aSupprimer.length; i++) localStorage.removeItem(aSupprimer[i]);
+
+            currentSite = '';
+            currentDate = '';
+            currentData = null;
+            window.monthlyData = null;
+
+            window.location.reload();
+        }
+
+        document.getElementById('btn-reset-demo').addEventListener('click', function() {
+            ouvrirModale('Réinitialiser la démonstration ?\n\nCette action supprimera :\n• toutes les saisies enregistrées ;\n• les versions conservées dans l\'historique ;\n• les traces de transmission.\n\nLes données des autres outils ne sont pas concernées.\nCette action est irréversible.', [
+                { label: 'Annuler', cls: 'btn-secondary' },
+                { label: 'Réinitialiser', cls: 'btn-danger', action: reinitialiserDemonstration }
+            ]);
+        });
 
         document.getElementById('date').value = new Date().toISOString().split('T')[0];
     </script>
